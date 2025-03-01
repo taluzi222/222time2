@@ -23,6 +23,9 @@
                 </button>
                 <div id="recordingTime">00:00</div>
                 <div id="recordingStatus"></div>
+                <p>按下录音键，录制您想说的话</p>
+                <textarea id="recordText" placeholder="记录现在的想法"></textarea>
+                <button class="btn" id="submitRecordBtn">确认提交</button>
             </section>
 
             <section class="photo-section">
@@ -61,6 +64,20 @@
                     </select>
                 </div>
             </section>
+          <section>
+            <button class = "btn" id="viewDiaryBtn">查看日记</button>
+              <input type="date" id="diaryDate" style="display:none">
+          </section>
+          <section>
+          <button class="btn" id="exportDataBtn">导出数据</button>
+            <div id="exportOptions" style="display: none;">
+                <label for="startDate">开始日期:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">结束日期:</label>
+                <input type="date" id="endDate">
+                <button class="btn" id="exportDataConfirmBtn">导出</button>
+            </div>
+          </section>
         </main>
     </div>
 

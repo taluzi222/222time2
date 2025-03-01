@@ -5,18 +5,23 @@ import { initializePhotoUpload } from './modules/photo.js';
 import { initializeWeather } from './modules/weather.js';
 import { initializeHealth } from './modules/health.js';
 import { initializeSettings } from './modules/settings.js';
-import { showMessage, showLoading, hideLoading, formatDate, blobToBase64, checkNetwork, tryParseJSONObject } from './utils.js';
+import { showMessage, showLoading, hideLoading, formatDate, blobToBase64, checkNetwork, tryParseJSONObject, getCalibratedTimestamp } from './utils.js';
 
 
 // Cloudflare Worker 的 URL (已设置为您的 Worker URL)
 const WORKER_URL = 'https://time.zhangchiguojing.workers.dev';
 
 // Cloudflare Worker 上传函数 (通用)
-async function uploadToCloudflareWorker(blob, path, type) {
+// 增加了 text 参数, 用于提交录音时附带的文字
+async function uploadToCloudflareWorker(blob, path, type, text = '') {
     const formData = new FormData();
     formData.append('file', blob);
     formData.append('path', path);
     formData.append('type', type);
+    // 新增: 添加文字内容
+    if (text) {
+        formData.append('text', text);
+    }
 
     const response = await fetch(`${WORKER_URL}/upload`, {
         method: 'POST',
@@ -47,10 +52,35 @@ async function syncHealthDataToCloudflareWorker(healthData) {
     return await response.json();
 }
 
+// 新增：获取并存储校准后的时间戳
+async function calibrateTime() {
+    try {
+        const response = await fetch(`${WORKER_URL}/api/time`);
+        if (!response.ok) {
+          let errorText = await response.text();
+          let errorData = tryParseJSONObject(errorText);
+          throw new Error(`时间校准失败: ${response.status} - ${errorData && errorData.message ? errorData.message : errorText}`);
+
+        }
+        const data = await response.json();
+        if (data && data.timestamp) {
+            localStorage.setItem('calibratedTimestamp', data.timestamp);
+        } else {
+          console.error('时间校准 API 返回数据格式错误:', data);
+          showMessage('时间校准失败', 'error');
+        }
+    } catch (error) {
+        console.error('时间校准失败:', error);
+        showMessage('时间校准失败', 'error');
+    }
+}
+
+
 // 初始化
 document.addEventListener('DOMContentLoaded', async () => {
 
     try {
+        await calibrateTime(); // 新增: 应用启动时校准时间
         await initializeRecording();
         initializePhotoUpload();
         initializeWeather();
@@ -71,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 监听网络状态变化
     window.addEventListener('online', () => {
-        showMessage('网络已连接', 'success');
+      showMessage('网络已连接', 'success');
     });
 
     window.addEventListener('offline', () => {

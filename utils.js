@@ -23,7 +23,9 @@ function hideLoading() {
 }
 
 // 格式化日期 (YYYY/MM/DD)
-function formatDate(date = new Date()) {
+// 现在 formatDate 函数接受一个可选的 timestamp 参数
+function formatDate(timestamp = Date.now()) {
+    const date = new Date(timestamp);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -44,6 +46,7 @@ function blobToBase64(blob) {
 function checkNetwork() {
     return navigator.onLine;
 }
+
 // 添加事件监听的通用函数
 function on(element, event, handler) {
     if (element && event && handler) {
@@ -71,4 +74,15 @@ function tryParseJSONObject(jsonString){
     return null;
 };
 
-export { showMessage, showLoading, hideLoading, formatDate, blobToBase64, checkNetwork, on, off, tryParseJSONObject };
+// 新增：获取校准后的时间戳
+async function getCalibratedTimestamp() {
+    // 尝试从localStorage中读取校准后的时间
+    const localTimestamp = localStorage.getItem('calibratedTimestamp');
+    if (localTimestamp) {
+        return parseInt(localTimestamp, 10);
+    }
+
+     return Date.now(); // 如果无法获取校准时间，则返回设备当前时间(注意：这里不应该再调用/api/time, 否则会循环)
+}
+
+export { showMessage, showLoading, hideLoading, formatDate, blobToBase64, checkNetwork, on, off, tryParseJSONObject, getCalibratedTimestamp };
