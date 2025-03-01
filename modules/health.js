@@ -1,6 +1,6 @@
 // modules/health.js (健康记录模块)
 
-import { showMessage, showLoading, hideLoading, formatDate, on, off } from '../utils.js';
+import { showMessage, showLoading, hideLoading, formatDate, on, off, getCalibratedTimestamp } from '../utils.js';
 import { syncHealthDataToCloudflareWorker } from '../script.js';
 
 function initializeHealth() {
@@ -73,7 +73,7 @@ function generateHealthAdvice(record) {
     return advice;
 }
 
-// 显示健康建议
+// 显示健康建议 (修改为在页面中间弹出)
 function showHealthAdvice(advice) {
     if (!advice || advice.length === 0) return;
 
@@ -90,8 +90,10 @@ function showHealthAdvice(advice) {
 }
 
 
-function loadTodayHealth() {
-    const today = formatDate();
+async function loadTodayHealth() {
+    // const today = formatDate(); //原始时间
+    const timestamp = await getCalibratedTimestamp(); //使用校准后的时间
+    const today = formatDate(timestamp);
     const healthData = JSON.parse(localStorage.getItem('healthRecords') || '{}');
     const todayRecord = healthData[today] || {};
 
@@ -102,7 +104,9 @@ function loadTodayHealth() {
 }
 
 async function saveHealthRecord() {
-    const today = formatDate();
+    // const today = formatDate(); //原始时间
+    const timestamp = await getCalibratedTimestamp(); //使用校准后的时间
+    const today = formatDate(timestamp);
     const healthData = JSON.parse(localStorage.getItem('healthRecords') || '{}');
 
     const record = {
@@ -110,7 +114,39 @@ async function saveHealthRecord() {
         bloodPressureLow: document.getElementById('bloodPressureLow').value,
         sleepQuality: document.getElementById('sleepQuality').value,
         mood: document.getElementById('mood').value,
-        timestamp: Date.now(),
+        timestamp: timestamp, // 使用校准后的时间戳
+    };
+
+    // 添加健康建议
+    record.advice = generateHealthAdvice(record);
+
+    healthData[today] = record;
+    localStorage.setItem('healthRecords', JSON.stringify(healthData));
+
+    // 通过 Cloudflare Worker 同步
+    try {
+        await syncHealthDataToCloudflareWorker(healthData);
+        showMessage('健康记录已保存', 'success');
+    } catch (error) {
+        console.error('同步健康记录失败:', error);
+        showMessage('健康记录已本地保存，但同步失败', 'warning');
+    }
+    // 显示健康建议
+    showHealthAdvice(record.advice);
+}
+
+export { initializeHealth };async function saveHealthRecord() {
+    // const today = formatDate(); //原始时间
+    const timestamp = await getCalibratedTimestamp(); //使用校准后的时间
+    const today = formatDate(timestamp);
+    const healthData = JSON.parse(localStorage.getItem('healthRecords') || '{}');
+
+    const record = {
+        bloodPressureHigh: document.getElementById('bloodPressureHigh').value,
+        bloodPressureLow: document.getElementById('bloodPressureLow').value,
+        sleepQuality: document.getElementById('sleepQuality').value,
+        mood: document.getElementById('mood').value,
+        timestamp: timestamp, // 使用校准后的时间戳
     };
 
     // 添加健康建议

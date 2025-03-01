@@ -77,7 +77,7 @@ function applyHighContrast(enabled) {
 }
 
 function applyTheme(theme) {
-    document.body.classList.remove('dark-theme', 'warm-theme'); // 移除其他主题
+     document.body.classList.remove('dark-theme', 'warm-theme'); // 移除其他主题
     if (theme !== 'light') {
         document.body.classList.add(`${theme}-theme`);
     }
